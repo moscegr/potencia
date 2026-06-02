@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puente H y Buffer - Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .tab-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .tab-inactive { background-color: #1e293b; color: #94a3b8; border-color: #334155; hover:bg-slate-700; }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.8)); }
+            50% { filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.4)); }
+        }
+        
+        canvas { background-color: #1e293b; border-radius: 0.5rem; width: 100%; height: 250px; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .component-svg:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Controladores y Lógica</h1>
+                <div class="mt-3 border-l-2 border-blue-500 pl-3 space-y-1">
+                    <p class="text-slate-200 text-sm font-bold uppercase tracking-wide">Materia: Electrónica de Potencia</p>
+                    <p class="text-slate-400 text-sm">Docente: JOSÉ ANTONIO GÓMEZ LUNA</p>
+                    <p class="text-slate-400 text-sm">Alumno: CRUZ ENRIQUE GARCÍA RAMOS</p>
+                </div>
+            </div>
+            <div class="text-right w-full md:w-auto flex justify-end">
+                <button onclick="showBiblio()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors border border-slate-700">
+                    Ver Bibliografía
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Sidebar Navigation -->
+        <nav class="lg:w-1/4 flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0" id="nav-tabs">
+            <!-- Tabs injected by JS -->
+        </nav>
+
+        <!-- Content Area -->
+        <div class="lg:w-3/4 flex flex-col gap-6">
+            
+            <!-- Info Card -->
+            <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 transition-all duration-300" id="info-card">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="device-icon" class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 text-2xl font-bold"></div>
+                    <h2 class="text-2xl font-bold text-white" id="device-title">Selecciona un dispositivo</h2>
+                </div>
+                
+                <div class="space-y-6 text-slate-300">
+                    <div>
+                        <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Funcionamiento</h3>
+                        <p id="device-func" class="leading-relaxed text-sm md:text-base"></p>
+                    </div>
+
+                    <!-- Sección de Imagen Vectorial -->
+                    <div class="bg-slate-900/80 rounded-lg p-6 border border-slate-700 flex flex-col items-center justify-center min-h-[160px]">
+                        <span class="text-sm text-blue-400 mb-4 uppercase tracking-wider font-bold">Diseño Físico y Símbolo</span>
+                        <div id="device-image" class="w-full"></div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Aplicaciones Principales</h3>
+                            <ul id="device-app" class="list-disc list-inside space-y-1 text-sm md:text-base text-slate-400"></ul>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Aplicación con ESP32</h3>
+                            <div class="bg-slate-900/50 p-3 rounded border border-slate-700">
+                                <strong class="text-white text-sm block mb-1" id="device-circ-title"></strong>
+                                <p id="device-circ-desc" class="text-sm"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Card -->
+            <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Simulación Interactiva
+                </h3>
+                
+                <div id="sim-container" class="w-full flex flex-col items-center justify-center min-h-[300px] bg-slate-900 rounded-lg p-4 border border-slate-700 relative overflow-hidden">
+                    <!-- Canvas injected here -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bibliography Modal -->
+    <div id="biblio-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-800 rounded-xl p-6 md:p-8 max-w-2xl w-full border border-slate-700 shadow-2xl transform scale-95 transition-transform duration-300" id="biblio-content">
+            <h2 class="text-2xl font-bold text-white mb-4">Bibliografía</h2>
+            <ul class="space-y-4 text-slate-300">
+                <li class="pl-4 border-l-2 border-blue-500">Boylestad, R. L., & Nashelsky, L. (2009). <em>Electrónica: teoría de circuitos y dispositivos electrónicos</em> (10ma ed.). Pearson Educación.</li>
+                <li class="pl-4 border-l-2 border-blue-500">Tocci, R. J., Widmer, N. S., & Moss, G. L. (2007). <em>Sistemas digitales: principios y aplicaciones</em> (10ma ed.). Pearson Educación.</li>
+            </ul>
+            <button onclick="hideBiblio()" class="mt-8 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition-colors">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Helper functions for SVG Graphics ---
+        const drawLayout = (physicalSvg, symbolSvg, physDesc, symDesc) => `
+            <div class="flex flex-col sm:flex-row items-center justify-around w-full gap-8">
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 component-svg text-slate-300">${physicalSvg}</div>
+                    <span class="text-xs mt-3 text-slate-400 font-medium bg-slate-800 px-3 py-1 rounded-full">${physDesc}</span>
+                </div>
+                <div class="hidden sm:block h-24 border-r border-slate-700 border-dashed"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 component-svg text-blue-400">${symbolSvg}</div>
+                    <span class="text-xs mt-3 text-slate-400 font-medium bg-slate-800 px-3 py-1 rounded-full">${symDesc}</span>
+                </div>
+            </div>
+        `;
+
+        // --- Data Structure ---
+        const db = [
+            {
+                id: 'puente_h',
+                name: 'Puente H',
+                shortName: 'P-H',
+                func: 'El Puente H es un circuito electrónico que permite aplicar voltaje a través de una carga en cualquier dirección. Su nombre proviene de su representación gráfica, que se asemeja a una "H". Consiste en cuatro interruptores (pueden ser BJT, MOSFETs o relés). Al cerrar los interruptores en diagonal (ej. S1 y S4), la corriente fluye en una dirección. Al cerrar la otra diagonal (S2 y S3), la corriente fluye en la dirección opuesta.',
+                app: ['Control de dirección en motores DC.', 'Inversores DC-AC (Creación de ondas senoidales a partir de baterías).', 'Amplificadores de audio clase D.'],
+                circTitle: 'Módulo L298N',
+                circDesc: 'Utilizando un puente H integrado como el L298N, el ESP32 solo necesita enviar señales lógicas (HIGH/LOW) para controlar la dirección. Combinado con una señal PWM, permite el control total de dirección y velocidad de un robot sin dañar los pines del microcontrolador.',
+                getGraphics: () => drawLayout(
+                    // Physical L298N Module
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><rect x="10" y="20" width="80" height="60" fill="#1e293b" rx="2"/><rect x="30" y="30" width="40" height="40" fill="#0f172a"/><path d="M40 30 v40 M50 30 v40 M60 30 v40" stroke="#334155"/><rect x="15" y="45" width="10" height="20" fill="#3b82f6"/><rect x="75" y="45" width="10" height="20" fill="#3b82f6"/><circle cx="20" cy="25" r="2" fill="#94a3b8"/><circle cx="80" cy="25" r="2" fill="#94a3b8"/></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M50 10 v20 M50 90 v-20"/><path d="M30 30 h40"/><path d="M30 70 h40"/><path d="M30 30 v15 M30 70 v-15"/><path d="M70 30 v15 M70 70 v-15"/><circle cx="50" cy="50" r="10"/><text x="50" y="54" font-size="10" text-anchor="middle" stroke="none" fill="currentColor">M</text><path d="M40 50 h-10 M60 50 h10"/><path d="M25 45 L35 40 M25 55 L35 60 M65 40 L75 45 M65 60 L75 55" stroke-width="1.5"/></svg>`,
+                    'Módulo Controlador L298N', 'Esquema de Puente H'
+                ),
+                renderSim: renderHBridgeSim
+            },
+            {
+                id: 'buffer',
+                name: 'Buffer Lógico',
+                shortName: 'BUF',
+                func: 'Un buffer (o seguidor de tensión/corriente) es un circuito que proporciona el mismo nivel de voltaje a su salida que el que recibe en su entrada, pero aislando ambas etapas. Su característica principal es tener una alta impedancia de entrada (no "roba" corriente de la fuente) y una baja impedancia de salida (puede entregar mucha corriente a la carga). Actúa como un muro de protección y un "amplificador de músculo".',
+                app: ['Protección de pines de microcontroladores.', 'Adaptación de niveles lógicos (ej. de 3.3V a 5V).', 'Transmisión de señales a largas distancias sin caída de tensión.', 'Activación de compuertas (Gate Drivers) en MOSFETs.'],
+                circTitle: 'Aislamiento de Señales ESP32',
+                circDesc: 'Los pines del ESP32 solo pueden suministrar unos ~12mA a 3.3V. Si intentas conectar varios LEDs, un relé directamente o enviar la señal por un cable muy largo, el voltaje caerá o el pin se quemará. Un buffer (como el 74HC244 o un transistor BJT configurado como seguidor) soluciona esto.',
+                getGraphics: () => drawLayout(
+                    // Physical Buffer IC
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><rect x="25" y="20" width="50" height="60" fill="#1e293b" rx="2"/><path d="M20 25 h5 M20 35 h5 M20 45 h5 M20 55 h5 M20 65 h5 M20 75 h5" stroke="#94a3b8"/><path d="M75 25 h5 M75 35 h5 M75 45 h5 M75 55 h5 M75 65 h5 M75 75 h5" stroke="#94a3b8"/><circle cx="35" cy="30" r="3" fill="#475569"/><text x="50" y="55" font-size="10" text-anchor="middle" stroke="none" fill="#64748b" transform="rotate(-90 50 50)">74HC244</text></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><polygon points="30,30 30,70 70,50" fill="currentColor"/><path d="M10 50 h20 M70 50 h20"/><text x="50" y="25" font-size="12" text-anchor="middle" stroke="none" fill="currentColor">In = Out</text></svg>`,
+                    'Circuito Integrado (Ej. 74HC244)', 'Símbolo Lógico de Buffer'
+                ),
+                renderSim: renderBufferSim
+            }
+        ];
+
+        let currentDevice = 'puente_h';
+        let cleanupFunctions = [];
+        let animationFrameId = null;
+
+        function init() {
+            const nav = document.getElementById('nav-tabs');
+            nav.innerHTML = '';
+            
+            db.forEach(dev => {
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-3 rounded-lg font-semibold text-left transition-all border w-full min-w-[120px] lg:min-w-0 ${dev.id === currentDevice ? 'tab-active' : 'tab-inactive'}`;
+                btn.onclick = () => selectDevice(dev.id);
+                btn.innerHTML = `<span class="hidden lg:inline">${dev.name}</span><span class="lg:hidden">${dev.shortName}</span>`;
+                btn.id = `tab-${dev.id}`;
+                nav.appendChild(btn);
+            });
+
+            selectDevice(currentDevice);
+        }
+
+        function selectDevice(id) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            cleanupFunctions.forEach(fn => fn());
+            cleanupFunctions = [];
+
+            currentDevice = id;
+            
+            db.forEach(dev => {
+                const btn = document.getElementById(`tab-${dev.id}`);
+                if (dev.id === id) {
+                    btn.classList.remove('tab-inactive'); btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active'); btn.classList.add('tab-inactive');
+                }
+            });
+
+            const data = db.find(d => d.id === id);
+            document.getElementById('device-title').textContent = data.name;
+            document.getElementById('device-icon').textContent = data.shortName.substring(0, 2);
+            document.getElementById('device-func').textContent = data.func;
+            
+            const appList = document.getElementById('device-app');
+            appList.innerHTML = '';
+            data.app.forEach(a => {
+                const li = document.createElement('li'); li.textContent = a; appList.appendChild(li);
+            });
+
+            document.getElementById('device-circ-title').textContent = data.circTitle;
+            document.getElementById('device-circ-desc').textContent = data.circDesc;
+            document.getElementById('device-image').innerHTML = data.getGraphics();
+
+            const simContainer = document.getElementById('sim-container');
+            simContainer.innerHTML = ''; 
+            data.renderSim(simContainer);
+        }
+
+        // --- Simulaciones ---
+
+        // 1. Puente H
+        function renderHBridgeSim(container) {
+            container.innerHTML = `
+                <div class="flex gap-4 mb-4">
+                    <button id="btn-fwd" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-colors">Giro Adelante (S1, S4)</button>
+                    <button id="btn-stop" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold transition-colors">Frenar</button>
+                    <button id="btn-rev" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-colors">Giro Atrás (S2, S3)</button>
+                </div>
+                <p id="hb-status" class="text-sm font-bold text-slate-400 mb-2">Estado: Detenido</p>
+                <canvas id="hb-canvas"></canvas>
+            `;
+            const canvas = document.getElementById('hb-canvas');
+            const btnFwd = document.getElementById('btn-fwd');
+            const btnStop = document.getElementById('btn-stop');
+            const btnRev = document.getElementById('btn-rev');
+            const statusLabel = document.getElementById('hb-status');
+            const ctx = canvas.getContext('2d');
+
+            let state = 0; // 0=stop, 1=fwd, -1=rev
+            let motorAngle = 0;
+
+            btnFwd.addEventListener('click', () => { state = 1; statusLabel.textContent = "Estado: Corriente + a - (Giro Adelante)"; statusLabel.className="text-sm font-bold text-blue-400 mb-2"; });
+            btnStop.addEventListener('click', () => { state = 0; statusLabel.textContent = "Estado: Detenido"; statusLabel.className="text-sm font-bold text-slate-400 mb-2"; });
+            btnRev.addEventListener('click', () => { state = -1; statusLabel.textContent = "Estado: Corriente - a + (Giro Atrás)"; statusLabel.className="text-sm font-bold text-red-400 mb-2"; });
+
+            function draw() {
+                if (!canvas.parentElement || currentDevice !== 'puente_h') return;
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const w = 120; // half width
+                const h = 80;  // half height
+
+                // Common style
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#475569';
+
+                // Supply lines
+                ctx.beginPath(); ctx.moveTo(cx, cy - h - 30); ctx.lineTo(cx, cy - h); ctx.stroke(); // VCC
+                ctx.beginPath(); ctx.moveTo(cx, cy + h + 30); ctx.lineTo(cx, cy + h); ctx.stroke(); // GND
+                
+                // Top and bottom horizontal rails
+                ctx.beginPath(); ctx.moveTo(cx - w, cy - h); ctx.lineTo(cx + w, cy - h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w, cy + h); ctx.lineTo(cx + w, cy + h); ctx.stroke();
+
+                // Center Motor horizontal line
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx + w, cy); ctx.stroke();
+
+                // Draw 4 Switches (S1: TopL, S2: TopR, S3: BotL, S4: BotR)
+                function drawSwitch(x, yTop, yBot, isClosed, isPositivePath) {
+                    // Vertical lines
+                    ctx.beginPath(); ctx.moveTo(x, yTop); ctx.lineTo(x, yTop + 20); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x, yBot); ctx.lineTo(x, yBot - 20); ctx.stroke();
+                    
+                    // The switch gate
+                    ctx.beginPath();
+                    ctx.lineWidth = 4;
+                    if (isClosed) {
+                        ctx.strokeStyle = isPositivePath ? '#3b82f6' : '#ef4444';
+                        ctx.moveTo(x, yTop + 20); ctx.lineTo(x, yBot - 20);
+                    } else {
+                        ctx.strokeStyle = '#475569';
+                        ctx.moveTo(x, yTop + 20); ctx.lineTo(x + 15, yBot - 25); // Open
+                    }
+                    ctx.stroke();
+                    ctx.strokeStyle = '#475569'; // reset
+                }
+
+                drawSwitch(cx - w, cy - h, cy, state === 1, true);   // S1
+                drawSwitch(cx + w, cy - h, cy, state === -1, true);  // S2
+                drawSwitch(cx - w, cy, cy + h, state === -1, false); // S3
+                drawSwitch(cx + w, cy, cy + h, state === 1, false);  // S4
+
+                // Draw current flow highlighting
+                if (state !== 0) {
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    if (state === 1) { // S1 to S4
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.moveTo(cx, cy - h - 10); ctx.lineTo(cx, cy - h); ctx.lineTo(cx - w, cy - h); ctx.lineTo(cx - w, cy); ctx.lineTo(cx, cy);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.moveTo(cx, cy); ctx.lineTo(cx + w, cy); ctx.lineTo(cx + w, cy + h); ctx.lineTo(cx, cy + h); ctx.lineTo(cx, cy + h + 10);
+                        ctx.stroke();
+                    } else if (state === -1) { // S2 to S3
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.moveTo(cx, cy - h - 10); ctx.lineTo(cx, cy - h); ctx.lineTo(cx + w, cy - h); ctx.lineTo(cx + w, cy); ctx.lineTo(cx, cy);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.moveTo(cx, cy); ctx.lineTo(cx - w, cy); ctx.lineTo(cx - w, cy + h); ctx.lineTo(cx, cy + h); ctx.lineTo(cx, cy + h + 10);
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw Motor in Center
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = state === 1 ? '#3b82f6' : (state === -1 ? '#ef4444' : '#475569');
+                ctx.lineWidth = 4; ctx.stroke();
+
+                // Motor rotation indicator
+                if (state !== 0) motorAngle += (state === 1 ? 0.1 : -0.1);
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(motorAngle);
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.beginPath(); ctx.arc(15, 0, 5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-15, 0, 5, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+
+                // Labels
+                ctx.fillStyle = '#f8fafc'; ctx.font = "14px Arial";
+                ctx.fillText("VCC", cx - 15, cy - h - 40);
+                ctx.fillText("GND", cx - 15, cy + h + 40);
+                ctx.fillText("S1", cx - w - 30, cy - h/2);
+                ctx.fillText("S2", cx + w + 10, cy - h/2);
+                ctx.fillText("S3", cx - w - 30, cy + h/2);
+                ctx.fillText("S4", cx + w + 10, cy + h/2);
+
+                animationFrameId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // 2. Buffer Logico
+        function renderBufferSim(container) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full gap-4">
+                    <div class="flex gap-4 border border-slate-700 p-2 rounded-lg bg-slate-900">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
+                            <input type="radio" name="buf_mode" value="direct" checked class="accent-red-500">
+                            Conexión Directa (Sin Buffer)
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
+                            <input type="radio" name="buf_mode" value="buffer" class="accent-green-500">
+                            Usar Buffer Logico
+                        </label>
+                    </div>
+                    
+                    <button id="buf-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-all active:scale-95">
+                        Enviar Señal (ESP32 Pin)
+                    </button>
+                    
+                    <div class="w-full flex justify-around mt-4 bg-slate-800 p-4 rounded border border-slate-700 relative h-[150px]">
+                        <!-- ESP32 Side -->
+                        <div class="flex flex-col items-center justify-center z-10">
+                            <div class="w-16 h-10 bg-slate-700 border-2 border-blue-400 rounded flex items-center justify-center text-xs font-bold">ESP32</div>
+                            <span id="esp-signal" class="text-xs text-slate-500 mt-2 font-mono">0V / 0mA</span>
+                        </div>
+
+                        <!-- Buffer Component (Hidden by default) -->
+                        <div id="buf-symbol" class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 transition-all z-10">
+                            <svg class="w-16 h-16 text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 100 100">
+                                <polygon points="20,20 20,80 80,50" fill="currentColor" fill-opacity="0.2"/>
+                                <text x="35" y="55" font-size="14" stroke="none" fill="currentColor">BUF</text>
+                            </svg>
+                        </div>
+
+                        <!-- Load Side -->
+                        <div class="flex flex-col items-center justify-center z-10">
+                            <!-- Motor or Heavy Load -->
+                            <div id="load-icon" class="w-12 h-12 rounded-full border-4 border-slate-600 flex items-center justify-center text-slate-600 bg-slate-900 transition-all">
+                                M
+                            </div>
+                            <span id="load-status" class="text-xs text-slate-500 mt-2 font-mono">Carga Pesada</span>
+                        </div>
+                        
+                        <!-- Connecting Wire -->
+                        <div id="wire" class="absolute top-1/2 left-[20%] right-[20%] h-1 bg-slate-600 transform -translate-y-1/2 transition-colors"></div>
+                    </div>
+                    <p id="buf-warning" class="text-sm font-bold text-red-400 h-6"></p>
+                </div>
+            `;
+            
+            const btn = document.getElementById('buf-btn');
+            const radios = document.getElementsByName('buf_mode');
+            const espSignal = document.getElementById('esp-signal');
+            const bufSymbol = document.getElementById('buf-symbol');
+            const loadIcon = document.getElementById('load-icon');
+            const wire = document.getElementById('wire');
+            const warning = document.getElementById('buf-warning');
+            
+            let useBuffer = false;
+            let signalActive = false;
+
+            radios.forEach(r => r.addEventListener('change', (e) => {
+                useBuffer = e.target.value === 'buffer';
+                bufSymbol.style.opacity = useBuffer ? '1' : '0.1';
+                updateState();
+            }));
+
+            btn.addEventListener('mousedown', () => { signalActive = true; updateState(); });
+            btn.addEventListener('mouseup', () => { signalActive = false; updateState(); });
+            btn.addEventListener('mouseleave', () => { signalActive = false; updateState(); });
+            // Touch support for mobile
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); signalActive = true; updateState(); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); signalActive = false; updateState(); });
+
+            function updateState() {
+                if (!signalActive) {
+                    espSignal.textContent = "0V / 0mA"; espSignal.className = "text-xs text-slate-500 mt-2 font-mono";
+                    wire.className = "absolute top-1/2 left-[20%] right-[20%] h-1 bg-slate-600 transform -translate-y-1/2 transition-colors";
+                    loadIcon.className = "w-12 h-12 rounded-full border-4 border-slate-600 flex items-center justify-center text-slate-600 bg-slate-900 transition-all";
+                    warning.textContent = "";
+                    return;
+                }
+
+                if (!useBuffer) {
+                    // Direct connection failure (overload)
+                    espSignal.textContent = "1.2V / 40mA (SOBRECARGA)"; 
+                    espSignal.className = "text-xs text-red-500 font-bold mt-2 font-mono anim-pulse-glow";
+                    wire.className = "absolute top-1/2 left-[20%] right-[20%] h-1 bg-red-500 transform -translate-y-1/2 transition-colors";
+                    loadIcon.className = "w-12 h-12 rounded-full border-4 border-red-500 flex items-center justify-center text-red-500 bg-slate-900 transition-all";
+                    warning.textContent = "¡Peligro! La carga exige demasiada corriente. El voltaje cae y el ESP32 puede quemarse.";
+                } else {
+                    // Buffer connection success
+                    espSignal.textContent = "3.3V / 0.1mA (Seguro)"; 
+                    espSignal.className = "text-xs text-green-400 mt-2 font-mono";
+                    wire.className = "absolute top-1/2 left-[20%] right-[20%] h-1 bg-green-500 transform -translate-y-1/2 transition-colors";
+                    loadIcon.className = "w-12 h-12 rounded-full border-4 border-green-500 flex items-center justify-center text-green-500 bg-green-900/50 transition-all spin-fast";
+                    warning.textContent = "Excelente. El buffer aísla el ESP32. La señal viaja fuerte y la carga funciona.";
+                    warning.className = "text-sm font-bold text-green-400 h-6";
+                }
+            }
+        }
+
+        function showBiblio() {
+            const modal = document.getElementById('biblio-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('biblio-content').classList.remove('scale-95'); }, 10);
+        }
+
+        function hideBiblio() {
+            const modal = document.getElementById('biblio-modal');
+            modal.classList.add('opacity-0'); document.getElementById('biblio-content').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        }
+
+        window.addEventListener('resize', () => { setTimeout(() => selectDevice(currentDevice), 50); });
+
+        init();
+    </script>
+</body>
+</html>
