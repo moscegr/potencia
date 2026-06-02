@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tipos de Motores - Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles and animations */
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .tab-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .tab-inactive { background-color: #1e293b; color: #94a3b8; border-color: #334155; hover:bg-slate-700; }
+        
+        .spin-fast { animation: spin 0.5s linear infinite; }
+        .spin-med { animation: spin 1.5s linear infinite; }
+        .spin-slow { animation: spin 4s linear infinite; }
+        .spin-stop { animation: spin 0s linear infinite; }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.8)); }
+            50% { opacity: 0.7; filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.4)); }
+        }
+        .anim-pulse-glow { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        canvas { background-color: #1e293b; border-radius: 0.5rem; width: 100%; height: 200px; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* SVG Hover effects */
+        .component-svg:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Tecnología de Motores</h1>
+                <div class="mt-3 border-l-2 border-blue-500 pl-3 space-y-1">
+                    <p class="text-slate-200 text-sm font-bold uppercase tracking-wide">Materia: Electrónica de Potencia</p>
+                    <p class="text-slate-400 text-sm">Docente: JOSÉ ANTONIO GÓMEZ LUNA</p>
+                    <p class="text-slate-400 text-sm">Alumno: CRUZ ENRIQUE GARCÍA RAMOS</p>
+                </div>
+            </div>
+            <div class="text-right w-full md:w-auto flex justify-end">
+                <button onclick="showBiblio()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors border border-slate-700">
+                    Ver Bibliografía (APA)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Sidebar Navigation -->
+        <nav class="lg:w-1/4 flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0" id="nav-tabs">
+            <!-- Tabs injected by JS -->
+        </nav>
+
+        <!-- Content Area -->
+        <div class="lg:w-3/4 flex flex-col gap-6">
+            
+            <!-- Info Card -->
+            <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 transition-all duration-300" id="info-card">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="device-icon" class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 text-2xl font-bold"></div>
+                    <h2 class="text-2xl font-bold text-white" id="device-title">Selecciona un dispositivo</h2>
+                </div>
+                
+                <div class="space-y-6 text-slate-300">
+                    <div>
+                        <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Funcionamiento</h3>
+                        <p id="device-func" class="leading-relaxed text-sm md:text-base"></p>
+                    </div>
+
+                    <!-- Sección de Imagen Vectorial -->
+                    <div class="bg-slate-900/80 rounded-lg p-6 border border-slate-700 flex flex-col items-center justify-center min-h-[160px]">
+                        <span class="text-sm text-blue-400 mb-4 uppercase tracking-wider font-bold">Diseño Físico y Símbolo</span>
+                        <div id="device-image" class="w-full"></div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Aplicaciones Principales</h3>
+                            <ul id="device-app" class="list-disc list-inside space-y-1 text-sm md:text-base text-slate-400"></ul>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-300 mb-2 border-b border-slate-700 pb-1">Control Típico</h3>
+                            <div class="bg-slate-900/50 p-3 rounded border border-slate-700">
+                                <strong class="text-white text-sm block mb-1" id="device-circ-title"></strong>
+                                <p id="device-circ-desc" class="text-sm"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Card -->
+            <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Simulación Interactiva
+                </h3>
+                
+                <!-- Dynamic Simulation Container -->
+                <div id="sim-container" class="w-full flex flex-col items-center justify-center min-h-[300px] bg-slate-900 rounded-lg p-4 border border-slate-700 relative overflow-hidden">
+                    <!-- Canvas and controls injected here -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bibliography Modal -->
+    <div id="biblio-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-800 rounded-xl p-6 md:p-8 max-w-2xl w-full border border-slate-700 shadow-2xl transform scale-95 transition-transform duration-300" id="biblio-content">
+            <h2 class="text-2xl font-bold text-white mb-4">Bibliografía (Formato APA)</h2>
+            <ul class="space-y-4 text-slate-300">
+                <li class="pl-4 border-l-2 border-blue-500">Chapman, S. J. (2012). <em>Máquinas eléctricas</em> (5ta ed.). McGraw-Hill.</li>
+                <li class="pl-4 border-l-2 border-blue-500">Fitzgerald, A. E., Kingsley, C., & Umans, S. D. (2003). <em>Electric machinery</em> (6ta ed.). McGraw-Hill.</li>
+                <li class="pl-4 border-l-2 border-blue-500">Hughes, A., & Drury, B. (2013). <em>Electric Motors and Drives: Fundamentals, Types and Applications</em> (4ta ed.). Newnes.</li>
+            </ul>
+            <button onclick="hideBiblio()" class="mt-8 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition-colors">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Helper functions for SVG Graphics ---
+        const drawLayout = (physicalSvg, symbolSvg, physDesc, symDesc) => `
+            <div class="flex flex-col sm:flex-row items-center justify-around w-full gap-8">
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 component-svg text-slate-300">${physicalSvg}</div>
+                    <span class="text-xs mt-3 text-slate-400 font-medium bg-slate-800 px-3 py-1 rounded-full">${physDesc}</span>
+                </div>
+                <div class="hidden sm:block h-24 border-r border-slate-700 border-dashed"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 component-svg text-blue-400">${symbolSvg}</div>
+                    <span class="text-xs mt-3 text-slate-400 font-medium bg-slate-800 px-3 py-1 rounded-full">${symDesc}</span>
+                </div>
+            </div>
+        `;
+
+        // --- Data Structure ---
+        const db = [
+            {
+                id: 'motor_dc',
+                name: 'Motor de CD',
+                shortName: 'CD',
+                func: 'El Motor de Corriente Directa (CD) funciona mediante la interacción de campos magnéticos. Consiste en un estator (imanes permanentes) y un rotor (bobinas). Al aplicar corriente, se genera un campo magnético en el rotor que es repelido por los imanes del estator. Un sistema mecánico de escobillas y colector invierte la corriente cíclicamente para mantener el giro continuo.',
+                app: ['Juguetes motorizados.', 'Elevadores de ventanas automotrices.', 'Electrodomésticos pequeños.', 'Robótica básica.'],
+                circTitle: 'Control con Puente H (ESP32)',
+                circDesc: 'Se utiliza un driver Puente H (como el L298N o L293D). Desde el ESP32, se envían dos pines digitales para controlar la dirección de giro y un pin PWM para regular el voltaje promedio entregado y, por ende, la velocidad.',
+                getGraphics: () => drawLayout(
+                    // Physical DC Motor
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M30 30 h40 v40 h-40 z" fill="#334155" rx="5"/><path d="M20 40 h10 v20 h-10 z" fill="#1e293b"/><path d="M70 45 h15 v10 h-15 z" fill="#475569"/><path d="M10 45 h10 M10 55 h10" stroke="#ef4444"/><circle cx="85" cy="50" r="3" fill="#0f172a"/><line x1="45" y1="30" x2="45" y2="70" stroke="#1e293b" stroke-dasharray="2"/><line x1="55" y1="30" x2="55" y2="70" stroke="#1e293b" stroke-dasharray="2"/></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="25"/><text x="50" y="55" font-size="20" text-anchor="middle" stroke="none" fill="currentColor">M</text><path d="M25 40 h-5 v20 h5"/><path d="M75 40 h5 v20 h-5"/><path d="M10 50 h10 M80 50 h10"/><path d="M50 70 v5 M45 75 h10" stroke-width="2"/></svg>`,
+                    'Motor DC con Escobillas', 'Símbolo Esquemático (M)'
+                ),
+                renderSim: renderDCSim
+            },
+            {
+                id: 'motor_bldc',
+                name: 'Brushless DC',
+                shortName: 'BLDC',
+                func: 'El BLDC (Motor de Corriente Directa sin Escobillas) elimina el roce mecánico. Los imanes permanentes están en el rotor y los electroimanes en el estator. El control de qué bobina se energiza se hace de forma electrónica (conmutación electrónica), leyendo la posición del rotor mediante sensores Hall o fuerza contraelectromotriz.',
+                app: ['Drones y Cuadricópteros.', 'Vehículos Eléctricos y Scooters.', 'Ventiladores de PC.', 'Discos Duros.'],
+                circTitle: 'Controlador ESC',
+                circDesc: 'Requiere un Electronic Speed Controller (ESC) que actúa como un inversor trifásico. El ESP32 envía una señal (tipo PWM o DShot) al ESC indicando la velocidad deseada, y el ESC se encarga de conmutar los transistores MOSFET a alta velocidad.',
+                getGraphics: () => drawLayout(
+                    // Physical BLDC (Outrunner drone motor)
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><circle cx="50" cy="50" r="35" fill="#1e293b" stroke="#334155" stroke-width="4"/><circle cx="50" cy="50" r="10" fill="#475569"/><path d="M50 50 L50 15 M50 50 L80 65 M50 50 L20 65" stroke="#0f172a" stroke-width="4"/><path d="M20 85 q 15 -10 30 -5 M20 90 q 15 -10 30 -5 M20 95 q 15 -10 30 -5" fill="none" stroke="#eab308"/></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="30"/><text x="50" y="55" font-size="16" text-anchor="middle" stroke="none" fill="currentColor">3~</text><path d="M50 20 v-10 M25 65 l -10 5 M75 65 l 10 5"/><text x="45" y="10" font-size="10" stroke="none" fill="currentColor">U</text><text x="10" y="75" font-size="10" stroke="none" fill="currentColor">V</text><text x="85" y="75" font-size="10" stroke="none" fill="currentColor">W</text></svg>`,
+                    'Motor BLDC (Outrunner)', 'Símbolo (Motor Trifásico BLDC)'
+                ),
+                renderSim: renderBLDCSim
+            },
+            {
+                id: 'motor_pasos',
+                name: 'Motor a Pasos',
+                shortName: 'Pasos',
+                func: 'El motor a pasos gira en ángulos discretos o "pasos" en lugar de hacerlo de manera continua. Posee un rotor dentado y múltiples bobinas en el estator. Al energizar las bobinas en una secuencia específica, el rotor se alinea con el campo magnético, logrando un control de posición de altísima precisión sin necesidad de sensores de retroalimentación.',
+                app: ['Impresoras 3D y Máquinas CNC.', 'Brazos Robóticos.', 'Lentes de cámaras (Enfoque autom.).', 'Dispensadores.'],
+                circTitle: 'Controlador Step/Dir (ESP32)',
+                circDesc: 'Con un driver como el A4988, puedes usar la lectura de botones de tu ESP32 ("Motor Unificado"). Un pin dicta la Dirección (Dir) y cada pulso en el pin de Paso (Step) hace avanzar el motor una fracción exacta de grado.',
+                getGraphics: () => drawLayout(
+                    // Physical Stepper NEMA 17
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><rect x="25" y="25" width="50" height="50" rx="5" fill="#334155"/><circle cx="50" cy="50" r="15" fill="#1e293b"/><circle cx="50" cy="50" r="4" fill="#94a3b8"/><circle cx="30" cy="30" r="2" fill="#0f172a"/><circle cx="70" cy="30" r="2" fill="#0f172a"/><circle cx="30" cy="70" r="2" fill="#0f172a"/><circle cx="70" cy="70" r="2" fill="#0f172a"/><path d="M25 50 h-10 M25 55 h-10 M25 45 h-10 M25 60 h-10" stroke="#ef4444"/></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><path d="M25 20 v15 a 10 10 0 0 0 20 0 v-15 M25 80 v-15 a 10 10 0 0 1 20 0 v15"/><path d="M55 20 v15 a 10 10 0 0 0 20 0 v-15 M55 80 v-15 a 10 10 0 0 1 20 0 v15"/><circle cx="50" cy="50" r="8" fill="currentColor"/><path d="M15 20 h10 M45 20 h10 M15 80 h10 M45 80 h10"/></svg>`,
+                    'Motor NEMA 17 (Bipolar)', 'Símbolo de Bobinas Bipolares'
+                ),
+                renderSim: renderStepperSim
+            },
+            {
+                id: 'motor_ca',
+                name: 'Motor de CA',
+                shortName: 'CA',
+                func: 'El Motor de Corriente Alterna (Inducción/Asíncrono) basa su giro en un campo magnético rotatorio creado en el estator por las fases de la red eléctrica AC. Este campo induce una corriente en el rotor (típicamente de jaula de ardilla) generando un campo opuesto que arrastra al rotor, siempre girando a una velocidad ligeramente menor que el campo (deslizamiento).',
+                app: ['Bombas de agua industriales.', 'Ventiladores de gran escala.', 'Lavadoras y secadoras.', 'Compresores HVAC.'],
+                circTitle: 'Variador de Frecuencia (VFD)',
+                circDesc: 'La velocidad de un motor CA depende de la frecuencia eléctrica. Para controlarlo se usa un VFD, que rectifica la línea AC a DC y luego usa transistores IGBT para generar una nueva onda AC (SPWM) de frecuencia y voltaje variables.',
+                getGraphics: () => drawLayout(
+                    // Physical AC Motor
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 30 h60 v40 h-60 z" fill="#334155" rx="8"/><path d="M25 30 v40 M35 30 v40 M45 30 v40 M55 30 v40 M65 30 v40 M75 30 v40" stroke="#1e293b"/><path d="M10 40 h10 v20 h-10 z" fill="#475569"/><path d="M80 45 h15 v10 h-15 z" fill="#94a3b8"/><rect x="40" y="15" width="20" height="15" fill="#1e293b"/></svg>`,
+                    // Symbol
+                    `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3"><circle cx="50" cy="50" r="25"/><text x="50" y="55" font-size="20" text-anchor="middle" stroke="none" fill="currentColor">M</text><path d="M40 70 q 5 -10 10 0 t 10 0"/><path d="M50 25 v-15 M30 35 l -10 -10 M70 35 l 10 -10"/></svg>`,
+                    'Motor de Inducción con Aletas', 'Símbolo de Motor CA'
+                ),
+                renderSim: renderACSim
+            }
+        ];
+
+        // --- State ---
+        let currentDevice = 'motor_dc';
+        let animationFrameId = null;
+        let cleanupFunctions = [];
+
+        // --- Initialization ---
+        function init() {
+            const nav = document.getElementById('nav-tabs');
+            nav.innerHTML = '';
+            
+            db.forEach(dev => {
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-3 rounded-lg font-semibold text-left transition-all border w-full min-w-[120px] lg:min-w-0 ${dev.id === currentDevice ? 'tab-active' : 'tab-inactive'}`;
+                btn.onclick = () => selectDevice(dev.id);
+                btn.innerHTML = `<span class="hidden lg:inline">${dev.name}</span><span class="lg:hidden">${dev.shortName}</span>`;
+                btn.id = `tab-${dev.id}`;
+                nav.appendChild(btn);
+            });
+
+            selectDevice(currentDevice);
+        }
+
+        // --- Core UI Updates ---
+        function selectDevice(id) {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            cleanupFunctions.forEach(fn => fn());
+            cleanupFunctions = [];
+
+            currentDevice = id;
+            
+            db.forEach(dev => {
+                const btn = document.getElementById(`tab-${dev.id}`);
+                if (dev.id === id) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+
+            const data = db.find(d => d.id === id);
+            document.getElementById('device-title').textContent = data.name;
+            document.getElementById('device-icon').textContent = data.shortName.substring(0, 2);
+            document.getElementById('device-func').textContent = data.func;
+            
+            const appList = document.getElementById('device-app');
+            appList.innerHTML = '';
+            data.app.forEach(a => {
+                const li = document.createElement('li');
+                li.textContent = a;
+                appList.appendChild(li);
+            });
+
+            document.getElementById('device-circ-title').textContent = data.circTitle;
+            document.getElementById('device-circ-desc').textContent = data.circDesc;
+            document.getElementById('device-image').innerHTML = data.getGraphics();
+
+            const simContainer = document.getElementById('sim-container');
+            simContainer.innerHTML = ''; 
+            data.renderSim(simContainer);
+        }
+
+        // --- Simulations Rendering Functions ---
+
+        // 1. Motor DC (Commutator interaction)
+        function renderDCSim(container) {
+            container.innerHTML = `
+                <div class="w-full flex justify-between text-slate-300 mb-2 text-sm">
+                    <span>Voltaje (Señal PWM ESP32): <span id="dc-val" class="font-bold text-blue-400">5V</span></span>
+                    <span>RPM: <span id="dc-rpm" class="font-bold text-green-400">1500</span></span>
+                </div>
+                <input type="range" id="dc-slider" min="-10" max="10" value="5" class="w-full mb-4 accent-blue-500">
+                <canvas id="dc-canvas"></canvas>
+            `;
+            const canvas = document.getElementById('dc-canvas');
+            const slider = document.getElementById('dc-slider');
+            const valDisplay = document.getElementById('dc-val');
+            const rpmDisplay = document.getElementById('dc-rpm');
+            const ctx = canvas.getContext('2d');
+            let angle = 0;
+
+            function animate() {
+                if (!canvas.parentElement || currentDevice !== 'motor_dc') return;
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const voltage = parseFloat(slider.value);
+                valDisplay.textContent = voltage + "V";
+                rpmDisplay.textContent = Math.round(Math.abs(voltage * 300));
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const r = 80;
+
+                // Draw Stator Magnets
+                ctx.fillStyle = '#ef4444'; // North Red
+                ctx.fillRect(cx - r - 40, cy - 30, 30, 60);
+                ctx.fillStyle = '#3b82f6'; // South Blue
+                ctx.fillRect(cx + r + 10, cy - 30, 30, 60);
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = "20px Arial";
+                ctx.fillText("N", cx - r - 30, cy + 7);
+                ctx.fillText("S", cx + r + 20, cy + 7);
+
+                // Draw Brushes (Escobillas)
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(cx - 15, cy - r - 10, 30, 10); // Top
+                ctx.fillRect(cx - 15, cy + r, 30, 10);      // Bottom
+                
+                // Draw Circuit Wires showing polarity
+                ctx.strokeStyle = voltage > 0 ? '#ef4444' : (voltage < 0 ? '#3b82f6' : '#94a3b8');
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(cx, cy - r - 10); ctx.lineTo(cx, cy - r - 30); ctx.stroke();
+                
+                ctx.strokeStyle = voltage < 0 ? '#ef4444' : (voltage > 0 ? '#3b82f6' : '#94a3b8');
+                ctx.beginPath(); ctx.moveTo(cx, cy + r + 10); ctx.lineTo(cx, cy + r + 30); ctx.stroke();
+
+                // Rotate Rotor
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+
+                // Determine rotor polarity based on commutator position relative to brushes
+                // The commutator switches the current direction as it passes 90 degrees
+                let normalizedAngle = angle % (Math.PI * 2);
+                if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
+                let isTopPositive = (normalizedAngle < Math.PI/2 || normalizedAngle > 3*Math.PI/2);
+                if (voltage < 0) isTopPositive = !isTopPositive;
+
+                // Draw Rotor Armature
+                ctx.fillStyle = voltage === 0 ? '#64748b' : (isTopPositive ? '#ef4444' : '#3b82f6');
+                ctx.fillRect(-20, -r + 10, 40, r*2 - 20);
+                
+                // Draw Commutator rings (Colector)
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, -Math.PI/2 + 0.1, Math.PI/2 - 0.1);
+                ctx.strokeStyle = voltage === 0 ? '#94a3b8' : (voltage > 0 ? '#ef4444' : '#3b82f6');
+                ctx.lineWidth = 6; ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, Math.PI/2 + 0.1, 3*Math.PI/2 - 0.1);
+                ctx.strokeStyle = voltage === 0 ? '#94a3b8' : (voltage > 0 ? '#3b82f6' : '#ef4444');
+                ctx.lineWidth = 6; ctx.stroke();
+
+                ctx.restore();
+
+                // Increment angle
+                angle += voltage * 0.05;
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // 2. Brushless DC (Electronic Commutation)
+        function renderBLDCSim(container) {
+            container.innerHTML = `
+                <div class="w-full flex justify-between text-slate-300 mb-2 text-sm">
+                    <span>Acelerador (Señal ESC): <span id="bldc-val" class="font-bold text-blue-400">50%</span></span>
+                </div>
+                <input type="range" id="bldc-slider" min="0" max="100" value="50" class="w-full mb-4 accent-blue-500">
+                <p class="text-xs text-slate-400 text-center mb-2">Conmutación electrónica (Sin escobillas). El estator cambia de fase para atraer/repeler los imanes del rotor.</p>
+                <canvas id="bldc-canvas"></canvas>
+            `;
+            const canvas = document.getElementById('bldc-canvas');
+            const slider = document.getElementById('bldc-slider');
+            const valDisplay = document.getElementById('bldc-val');
+            const ctx = canvas.getContext('2d');
+            let angle = 0;
+            let phase = 0;
+
+            function animate() {
+                if (!canvas.parentElement || currentDevice !== 'motor_bldc') return;
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const speed = parseInt(slider.value);
+                valDisplay.textContent = speed + "%";
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const r = 80;
+
+                // Determine active stator coils based on rotor angle
+                // 3 phases, 6 steps per electrical revolution
+                let normalizedAngle = angle % (Math.PI * 2);
+                let step = Math.floor((normalizedAngle / (Math.PI * 2)) * 6) % 6;
+
+                // Draw 3 Stator Coils (U, V, W) at 0, 120, 240 degrees
+                for(let i=0; i<3; i++) {
+                    let coilAngle = i * (Math.PI * 2 / 3) - Math.PI/2;
+                    let x = cx + Math.cos(coilAngle) * r;
+                    let y = cy + Math.sin(coilAngle) * r;
+                    
+                    // Determine coil polarity based on step
+                    let coilColor = '#475569'; // Off
+                    let glow = 'none';
+                    if (speed > 0) {
+                        if (i === 0) coilColor = (step === 0 || step === 5) ? '#ef4444' : ((step === 2 || step === 3) ? '#3b82f6' : '#475569');
+                        if (i === 1) coilColor = (step === 1 || step === 2) ? '#ef4444' : ((step === 4 || step === 5) ? '#3b82f6' : '#475569');
+                        if (i === 2) coilColor = (step === 3 || step === 4) ? '#ef4444' : ((step === 0 || step === 1) ? '#3b82f6' : '#475569');
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 20, 0, Math.PI * 2);
+                    ctx.fillStyle = coilColor;
+                    if(coilColor !== '#475569') {
+                        ctx.shadowColor = coilColor;
+                        ctx.shadowBlur = 15;
+                    }
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // reset
+                    
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = "14px Arial";
+                    ctx.fillText(["U","V","W"][i], x-5, y+5);
+                }
+
+                // Draw Rotor (Permanent Magnets)
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+
+                // Center pivot
+                ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fillStyle = '#1e293b'; ctx.fill();
+                
+                // Magnets
+                ctx.fillStyle = '#ef4444'; ctx.fillRect(-15, -45, 30, 15); // N
+                ctx.fillStyle = '#3b82f6'; ctx.fillRect(-15, 30, 30, 15);  // S
+                
+                ctx.fillStyle = '#f8fafc'; ctx.font="12px Arial";
+                ctx.fillText("N", -5, -35); ctx.fillText("S", -5, 42);
+
+                ctx.restore();
+
+                // Increment angle
+                angle += speed * 0.005;
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+            slider.addEventListener('input', () => {}); // Triggers redraw loop
+        }
+
+        // 3. Stepper Motor (Discrete Steps)
+        function renderStepperSim(container) {
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row items-center justify-between w-full mb-4 gap-4">
+                    <div class="text-sm text-slate-300">
+                        Paso actual: <span id="step-val" class="font-bold text-blue-400 text-lg">0°</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-ccw" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold flex items-center gap-1 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg> Paso Antihorario
+                        </button>
+                        <button id="btn-cw" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold flex items-center gap-1 transition-colors">
+                            Paso Horario <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 text-center mb-4 border-l-2 border-blue-500 pl-2 bg-slate-800/50 py-1">Concepto Motor Unificado ESP32: Cada clic equivale a un pulso (STEP). Control de posición exacto sin sensores.</p>
+                <canvas id="stepper-canvas"></canvas>
+            `;
+            const canvas = document.getElementById('stepper-canvas');
+            const btnCW = document.getElementById('btn-cw');
+            const btnCCW = document.getElementById('btn-ccw');
+            const valDisplay = document.getElementById('step-val');
+            const ctx = canvas.getContext('2d');
+            
+            let currentStep = 0; // 0, 1, 2, 3
+            let targetAngle = 0;
+            let currentAngle = 0;
+
+            function updateStep(direction) {
+                currentStep = (currentStep + direction + 4) % 4;
+                targetAngle += direction * (Math.PI / 2); // 90 degree steps
+                valDisplay.textContent = (targetAngle * (180/Math.PI)).toFixed(0) + "°";
+            }
+
+            btnCW.addEventListener('click', () => updateStep(1));
+            btnCCW.addEventListener('click', () => updateStep(-1));
+
+            function animate() {
+                if (!canvas.parentElement || currentDevice !== 'motor_pasos') return;
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Smooth rotation to target angle
+                currentAngle += (targetAngle - currentAngle) * 0.15;
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const r = 80;
+
+                // Draw 4 Coils (A, B, A', B') at 0, 90, 180, 270
+                for(let i=0; i<4; i++) {
+                    let coilAngle = i * (Math.PI / 2) - Math.PI/2;
+                    let x = cx + Math.cos(coilAngle) * r;
+                    let y = cy + Math.sin(coilAngle) * r;
+                    
+                    // Activate coil based on step
+                    let isActive = (i === currentStep);
+                    let coilColor = isActive ? '#ef4444' : '#475569';
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 18, 0, Math.PI * 2);
+                    ctx.fillStyle = coilColor;
+                    if(isActive) { ctx.shadowColor = coilColor; ctx.shadowBlur = 10; }
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = "12px Arial";
+                    ctx.fillText(["A","B","A'","B'"][i], x-5, y+4);
+                }
+
+                // Draw Rotor (Teeth)
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(currentAngle);
+
+                // Rotor core
+                ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI * 2); 
+                ctx.fillStyle = '#334155'; ctx.fill();
+                ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 4; ctx.stroke();
+                
+                // Draw magnetic orientation
+                ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(-10, 10); ctx.lineTo(10, 10); ctx.fill(); // North arrow pointing up
+                
+                ctx.restore();
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // 4. AC Motor (Induction / Rotating Magnetic Field)
+        function renderACSim(container) {
+            container.innerHTML = `
+                <div class="w-full flex justify-between text-slate-300 mb-2 text-sm">
+                    <span>Frecuencia VFD (SPWM): <span id="ac-val" class="font-bold text-blue-400">60 Hz</span></span>
+                </div>
+                <input type="range" id="ac-slider" min="0" max="60" value="30" class="w-full mb-4 accent-blue-500">
+                <p class="text-xs text-slate-400 text-center mb-2">Las 3 fases de corriente alterna crean un <span class="text-blue-400">campo magnético rotatorio (Flecha Azul)</span>. El rotor persigue este campo con un ligero deslizamiento.</p>
+                <canvas id="ac-canvas"></canvas>
+            `;
+            const canvas = document.getElementById('ac-canvas');
+            const slider = document.getElementById('ac-slider');
+            const valDisplay = document.getElementById('ac-val');
+            const ctx = canvas.getContext('2d');
+            let angleField = 0;
+            let angleRotor = 0;
+
+            function animate() {
+                if (!canvas.parentElement || currentDevice !== 'motor_ca') return;
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const freq = parseFloat(slider.value);
+                valDisplay.textContent = freq + " Hz";
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const r = 85;
+
+                // Draw Stator Housing
+                ctx.beginPath(); ctx.arc(cx, cy, r + 15, 0, Math.PI*2);
+                ctx.strokeStyle = '#334155'; ctx.lineWidth = 10; ctx.stroke();
+                
+                // 3 Phase waves graphic in background
+                ctx.globalAlpha = 0.2;
+                const phaseW = 100;
+                const phaseH = 30;
+                for(let p=0; p<3; p++) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = p==0?'#ef4444':p==1?'#3b82f6':'#22c55e';
+                    ctx.lineWidth = 2;
+                    let offset = p * (Math.PI*2/3);
+                    for(let x=0; x<phaseW; x++) {
+                        let y = cy - r - 40 + Math.sin(x*0.1 + angleField + offset)*phaseH;
+                        if(x==0) ctx.moveTo(cx - phaseW/2 + x, y); else ctx.lineTo(cx - phaseW/2 + x, y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1.0;
+
+                // Draw Rotor (Squirrel Cage representation)
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angleRotor);
+                ctx.beginPath(); ctx.arc(0, 0, r - 10, 0, Math.PI*2);
+                ctx.fillStyle = '#cbd5e1'; ctx.fill();
+                // Cage bars
+                for(let i=0; i<12; i++) {
+                    ctx.beginPath(); ctx.arc(Math.cos(i*Math.PI/6)*60, Math.sin(i*Math.PI/6)*60, 6, 0, Math.PI*2);
+                    ctx.fillStyle = '#64748b'; ctx.fill();
+                }
+                ctx.restore();
+
+                // Draw Rotating Magnetic Field Vector
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angleField);
+                
+                // Arrow
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -r); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 6; ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-10, -r + 15); ctx.lineTo(0, -r); ctx.lineTo(10, -r + 15); ctx.fillStyle = '#3b82f6'; ctx.fill();
+                
+                ctx.restore();
+
+                // Physics logic:
+                // Field rotates exactly at freq.
+                let speedField = freq * 0.005;
+                angleField += speedField;
+                
+                // Rotor tries to catch up, but has "slip" (deslizamiento)
+                if (freq > 0) {
+                    let slip = 0.005; // Fixed slip for visualization
+                    let speedRotor = Math.max(0, speedField - slip);
+                    angleRotor += speedRotor;
+                }
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- Modals ---
+        function showBiblio() {
+            const modal = document.getElementById('biblio-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Small delay to allow CSS transition to work
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('biblio-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function hideBiblio() {
+            const modal = document.getElementById('biblio-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('biblio-content').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // Add resize listener to handle canvas responsiveness globally
+        window.addEventListener('resize', () => {
+            // Trigger a fast redraw by calling the specific render function slightly delayed
+            setTimeout(() => selectDevice(currentDevice), 50);
+        });
+
+        // Run app
+        init();
+
+    </script>
+</body>
+</html>
